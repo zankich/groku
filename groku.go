@@ -6,13 +6,17 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/codegangsta/cli"
 )
 
-const VERSION = "0.1"
+const VERSION = "0.2"
+
+var CONFIG string
 
 func main() {
+	CONFIG = fmt.Sprintf("%v/groku", os.TempDir())
 	app := cli.NewApp()
 	app.Name = "groku"
 	app.Version = VERSION
@@ -22,21 +26,46 @@ func main() {
 }
 
 func findRoku() string {
-	ssdp, _ := net.ResolveUDPAddr("udp", "239.255.255.250:1900")
-	addr, _ := net.ResolveUDPAddr("udp", ":0")
-	socket, _ := net.ListenUDP("udp", addr)
+	fi, err := os.Open(CONFIG)
+	defer fi.Close()
+	if err != nil {
+		ssdp, _ := net.ResolveUDPAddr("udp", "239.255.255.250:1900")
+		addr, _ := net.ResolveUDPAddr("udp", ":0")
+		socket, _ := net.ListenUDP("udp", addr)
 
-	socket.WriteToUDP([]byte("M-SEARCH * HTTP/1.1\r\n"+
-		"HOST: 239.255.255.250:1900\r\n"+
-		"MAN: \"ssdp:discover\"\r\n"+
-		"ST: roku:ecp\r\n"+
-		"MX: 3 \r\n\r\n"), ssdp)
+		socket.WriteToUDP([]byte("M-SEARCH * HTTP/1.1\r\n"+
+			"HOST: 239.255.255.250:1900\r\n"+
+			"MAN: \"ssdp:discover\"\r\n"+
+			"ST: roku:ecp\r\n"+
+			"MX: 3 \r\n\r\n"), ssdp)
 
-	answerBytes := make([]byte, 1024)
-	socket.ReadFromUDP(answerBytes[:])
+		answerBytes := make([]byte, 1024)
+		socket.SetReadDeadline(time.Now().Add(3 * time.Second))
+		_, _, err := socket.ReadFromUDP(answerBytes[:])
+		if err != nil {
+			fmt.Println("Could not find your Roku!")
+			os.Exit(1)
+		}
 
-	ret := strings.Split(string(answerBytes), "\r\n")
-	return strings.TrimPrefix(ret[len(ret)-3], "LOCATION: ")
+		ret := strings.Split(string(answerBytes), "\r\n")
+		location := strings.TrimPrefix(ret[len(ret)-3], "LOCATION: ")
+
+		fi, err := os.Create(CONFIG)
+		defer fi.Close()
+		if err != nil {
+			return location
+		}
+		fi.Write([]byte(location))
+		return location
+	}
+	buf := make([]byte, 1024)
+	n, err := fi.Read(buf[:])
+	if err != nil {
+		os.Remove(CONFIG)
+		return findRoku()
+	} else {
+		return string(buf[:n])
+	}
 }
 
 func commands() []cli.Command {
@@ -82,6 +111,7 @@ func commands() []cli.Command {
 		Name:  "discover",
 		Usage: "discover roku on your local network",
 		Action: func(c *cli.Context) {
+			os.Remove(CONFIG)
 			fmt.Println("Found roku at", findRoku())
 		},
 	})
