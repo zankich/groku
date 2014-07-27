@@ -30,14 +30,27 @@ COMMANDS:
    back         back
    info         info
    backspace    backspace
-   search       search
    enter        enter
+   search       search
    replay       replay
    play         play/pause
    discover     discover roku on your local network
+   text         send text to the roku
    help, h      Shows a list of commands or help for one command
    
 GLOBAL OPTIONS:
    --version, -v        print the version
    --help, -h           show help
+
 ```
+Play or pause current video:  
+`$ groku play`
+
+Rewind video:  
+`$ groku rev`
+
+Fast Forward video:  
+`$ groku fwd`
+
+Enter text into search box:  
+`$ groku text "Breaking Bad"`
