@@ -42,25 +42,25 @@ func findRoku() string {
 func commands() []cli.Command {
 	cmds := []cli.Command{}
 	for _, cmd := range []string{
-		"Home",
-		"Rev",
-		"Fwd",
-		"Select",
-		"Left",
-		"Right",
-		"Down",
-		"Up",
-		"Back",
-		"Info",
-		"Backspace",
-		"Search",
-		"Enter",
+		"home",
+		"rev",
+		"fwd",
+		"select",
+		"left",
+		"right",
+		"down",
+		"up",
+		"back",
+		"info",
+		"backspace",
+		"enter",
+		"search",
 	} {
 		cmds = append(cmds, cli.Command{
-			Name:  strings.ToLower(cmd),
-			Usage: strings.ToLower(cmd),
+			Name:  cmd,
+			Usage: cmd,
 			Action: func(c *cli.Context) {
-				http.PostForm(fmt.Sprintf("%vkeypress/%v", findRoku(), cmd), nil)
+				http.PostForm(fmt.Sprintf("%vkeypress/%v", findRoku(), c.Command.Name), nil)
 			},
 		})
 	}
