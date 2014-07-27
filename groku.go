@@ -85,5 +85,15 @@ func commands() []cli.Command {
 			fmt.Println("Found roku at", findRoku())
 		},
 	})
+	cmds = append(cmds, cli.Command{
+		Name:  "text",
+		Usage: "send text to the roku",
+		Action: func(c *cli.Context) {
+			roku := findRoku()
+			for _, c := range c.Args()[0] {
+				http.PostForm(fmt.Sprintf("%vkeypress/Lit_%v", roku, string(c)), nil)
+			}
+		},
+	})
 	return cmds
 }
