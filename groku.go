@@ -18,7 +18,6 @@ func main() {
 	app.Version = VERSION
 	app.Usage = "roku CLI remote"
 	app.Commands = commands()
-	app.Commands = append(app.Commands, discover())
 	app.Run(os.Args)
 }
 
@@ -79,15 +78,12 @@ func commands() []cli.Command {
 			http.PostForm(fmt.Sprintf("%vkeypress/%v", findRoku(), "Play"), nil)
 		},
 	})
-	return cmds
-}
-
-func discover() cli.Command {
-	return cli.Command{
+	cmds = append(cmds, cli.Command{
 		Name:  "discover",
 		Usage: "discover roku on your local network",
 		Action: func(c *cli.Context) {
 			fmt.Println("Found roku at", findRoku())
 		},
-	}
+	})
+	return cmds
 }
