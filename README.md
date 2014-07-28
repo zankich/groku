@@ -16,7 +16,7 @@ USAGE:
    groku [global options] command [command options] [arguments...]
 
 VERSION:
-   0.1
+   0.3
 
 COMMANDS:
    home         home
@@ -36,6 +36,8 @@ COMMANDS:
    play         play/pause
    discover     discover roku on your local network
    text         send text to the roku
+   apps         list installed apps on roku
+   app          launch specified app
    help, h      Shows a list of commands or help for one command
    
 GLOBAL OPTIONS:
@@ -54,3 +56,9 @@ Fast Forward video:
 
 Enter text into search box:  
 `$ groku text "Breaking Bad"`
+
+Query installed apps:  
+`$ groku apps`
+
+Launch installed app:  
+`$ groku app "Netflix"`
