@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -11,9 +13,19 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-const VERSION = "0.2"
+const VERSION = "0.3"
 
 var CONFIG string
+
+type dictonary struct {
+	XMLName xml.Name `xml:"apps"`
+	Apps    []app    `xml:"app"`
+}
+
+type app struct {
+	Name string `xml:",chardata"`
+	ID   string `xml:"id,attr"`
+}
 
 func main() {
 	CONFIG = fmt.Sprintf("%v/groku", os.TempDir())
@@ -23,6 +35,18 @@ func main() {
 	app.Usage = "roku CLI remote"
 	app.Commands = commands()
 	app.Run(os.Args)
+}
+
+func queryApps() dictonary {
+	resp, _ := http.Get(fmt.Sprintf("%vquery/apps", findRoku()))
+	body := make([]byte, 2048)
+	n, _ := resp.Body.Read(body)
+
+	var dict dictonary
+	if err := xml.Unmarshal(body[:n], &dict); err != nil {
+		log.Fatalln(err)
+	}
+	return dict
 }
 
 func findRoku() string {
@@ -123,6 +147,32 @@ func commands() []cli.Command {
 			for _, c := range c.Args()[0] {
 				http.PostForm(fmt.Sprintf("%vkeypress/Lit_%v", roku, string(c)), nil)
 			}
+		},
+	})
+	cmds = append(cmds, cli.Command{
+		Name:  "apps",
+		Usage: "list installed apps on roku",
+		Action: func(c *cli.Context) {
+			dict := queryApps()
+			fmt.Println("Installed apps:")
+			for _, a := range dict.Apps {
+				fmt.Println(a.Name)
+			}
+		},
+	})
+	cmds = append(cmds, cli.Command{
+		Name:  "app",
+		Usage: "launch specified app",
+		Action: func(c *cli.Context) {
+			dict := queryApps()
+			for _, a := range dict.Apps {
+				if a.Name == c.Args()[0] {
+					http.PostForm(fmt.Sprintf("%vlaunch/%v", findRoku(), a.ID), nil)
+					return
+				}
+			}
+			fmt.Println("App not found!")
+			os.Exit(1)
 		},
 	})
 	return cmds
