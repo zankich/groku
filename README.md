@@ -4,6 +4,25 @@ groku
 CLI utility for controlling your [Roku](https://www.roku.com/)
 
 ###Installation
+You may download a precompiled binary
+
+#####Windows
+--
+- [32bit](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_windows_386.zip)
+- [64bit](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_windows_amd64.zip)  
+
+#####Linux
+--
+- [32bit](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_linux_386.tar.gz)
+- [64bit](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_linux_amd64.tar.gz)
+- [armhf](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_linux_arm.tar.gz)
+
+#####OSX
+--
+- [32bit](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_darwin_386.zip)
+- [64bit](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_darwin_amd64.zip)
+
+Or install from source  
 `go get github.com/zankich/groku`
 
 ###Usage
