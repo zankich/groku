@@ -113,7 +113,7 @@ func commands() []cli.Command {
 			Name:  cmd,
 			Usage: cmd,
 			Action: func(c *cli.Context) {
-				http.PostForm(fmt.Sprintf("%vkeypress/%v", findRoku(), c.Command.Name), nil)
+				http.PostForm(fmt.Sprintf("%vkeypress/%v", findRoku(), cmd), nil)
 			},
 		})
 	}
