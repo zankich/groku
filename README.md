@@ -1,26 +1,26 @@
 groku
 =====
 
-CLI utility for controlling your [Roku](https://www.roku.com/)
+CLI remote for controlling your [Roku](https://www.roku.com/)
 
 ###Installation
 You may download a precompiled binary
 
 #####Windows
 --
-- [32bit](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_windows_386.zip)
-- [64bit](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_windows_amd64.zip)  
+- [32bit](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_windows_386.zip)
+- [64bit](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_windows_amd64.zip)
 
 #####Linux
 --
-- [32bit](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_linux_386.tar.gz)
-- [64bit](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_linux_amd64.tar.gz)
-- [armhf](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_linux_arm.tar.gz)
+- [32bit](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_linux_386.tar.gz)
+- [64bit](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_linux_amd64.tar.gz)
+- [armhf](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_linux_arm.tar.gz)
 
 #####OSX
 --
-- [32bit](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_darwin_386.zip)
-- [64bit](https://github.com/zankich/groku/releases/download/0.3/groku_0.3_darwin_amd64.zip)
+- [32bit](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_darwin_386.zip)
+- [64bit](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_darwin_amd64.zip)
 
 Or install from source  
 `go get github.com/zankich/groku`
@@ -28,41 +28,31 @@ Or install from source
 ###Usage
 ```
 $ groku
-NAME:
-   groku - roku CLI remote
+usage: groku [--version] [--help] <command> [<args>]
 
-USAGE:
-   groku [global options] command [command options] [arguments...]
+CLI remote for your Roku
 
-VERSION:
-   0.3
-
-COMMANDS:
-   home         home
-   rev          rev
-   fwd          fwd
-   select       select
-   left         left
-   right        right
-   down         down
-   up           up
-   back         back
-   info         info
-   backspace    backspace
-   enter        enter
-   search       search
-   replay       replay
-   play         play/pause
-   discover     discover roku on your local network
-   text         send text to the roku
-   apps         list installed apps on roku
-   app          launch specified app
-   help, h      Shows a list of commands or help for one command
-   
-GLOBAL OPTIONS:
-   --version, -v        print the version
-   --help, -h           show help
-
+Commands:
+  home            Return to the home screen
+  rev             Reverse
+  fwd             Fast Forward
+  select          Select
+  left            Left
+  right           Right
+  up              Up
+  down            Down
+  back            Back
+  info            Info
+  backspace       Backspace
+  enter           Enter
+  search          Search
+  replay          Replay
+  play            Play
+  pause           Pause
+  discover        Discover a roku on your local network
+  text            Send text to the Roku
+  apps            List installed apps on your Roku
+  app             Launch specified app
 ```
 Play or pause current video:  
 `$ groku play`

@@ -19,6 +19,8 @@ const (
 	VERSION = "0.4"
 	USAGE   = `usage: groku [--version] [--help] <command> [<args>]
 
+CLI remote for your Roku
+
 Commands:
   home            Return to the home screen
   rev             Reverse
@@ -37,8 +39,8 @@ Commands:
   play            Play
   pause           Pause
   discover        Discover a roku on your local network
-  text            Send text to the roku
-  apps            List installed apps on your roku
+  text            Send text to the Roku
+  apps            List installed apps on your Roku
   app             Launch specified app
 `
 )
