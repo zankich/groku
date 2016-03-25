@@ -22,28 +22,28 @@ const (
 CLI remote for your Roku
 
 Commands:
-  home            Return to the home screen
-  rev             Reverse
-  fwd             Fast Forward
-  select          Select
-  left            Left
-  right           Right
-  up              Up
-  down            Down
-  back            Back
-  info            Info
-  backspace       Backspace
-  enter           Enter
-  search          Search
-  replay          Replay
-  play            Play
-  pause           Pause
-  discover        Discover a roku on your local network
-  device-info     Display device info
-  text            Send text to the Roku
-  apps            List installed apps on your Roku
-  app             Launch specified app
-`
+	home            Return to the home screen
+	rev             Reverse
+	fwd             Fast Forward
+	select          Select
+	left            Left
+	right           Right
+	up              Up
+	down            Down
+	back            Back
+	info            Info
+	backspace       Backspace
+	enter           Enter
+	search          Search
+	replay          Replay
+	play            Play
+	pause           Pause
+	discover        Discover a roku on your local network
+	device-info     Display device info
+	text            Send text to the Roku
+	apps            List installed apps on your Roku
+	app             Launch specified app
+	`
 )
 
 type dictionary struct {
@@ -66,14 +66,20 @@ type app struct {
 	ID   string `xml:"id,attr"`
 }
 
+type roku struct {
+	Address string `json:"address"`
+	Name    string `json:"name"`
+}
+
 type grokuConfig struct {
-	Address   string `json:"address"`
-	Name      string `json:"name"`
+	Current   roku   `json:"current"`
+	Rokus     []roku `json:"rokus"`
 	Timestamp int64  `json:"timestamp"`
 }
 
 func main() {
 	CONFIG = fmt.Sprintf("%s/groku.json", os.TempDir())
+	fmt.Println("CONFIG: ", CONFIG)
 
 	if len(os.Args) == 1 || os.Args[1] == "--help" || os.Args[1] == "-help" ||
 		os.Args[1] == "--h" || os.Args[1] == "-h" || os.Args[1] == "help" {
@@ -191,7 +197,7 @@ func queryInfo() deviceinfo {
 	return queryInfoForAddress(getRokuAddress())
 }
 
-func findRoku() (string, string) {
+func findRokus() []roku {
 	ssdp, err := net.ResolveUDPAddr("udp", "239.255.255.250:1900")
 	if err != nil {
 		fmt.Println(err)
@@ -221,34 +227,45 @@ func findRoku() (string, string) {
 		os.Exit(1)
 	}
 
-	answerBytes := make([]byte, 1024)
-	err = socket.SetReadDeadline(time.Now().Add(3 * time.Second))
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	var rokus []roku
+	listentimer := time.Now().Add(5 * time.Second)
+	for time.Now().Before(listentimer) {
+		answerBytes := make([]byte, 1024)
+		err = socket.SetReadDeadline(listentimer)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		_, _, err = socket.ReadFromUDP(answerBytes[:])
+
+		if err == nil {
+			ret := strings.Split(string(answerBytes), "\r\n")
+			location := strings.TrimPrefix(ret[len(ret)-3], "LOCATION: ")
+
+			for _, s := range ret {
+				fmt.Println(s)
+			}
+
+			name := queryInfoForAddress(location).DeviceName
+
+			r := roku{Name: name, Address: location}
+			fmt.Println(r)
+
+			rokus = append(rokus, r)
+		}
 	}
+	fmt.Println("Rokus: ", rokus)
 
-	_, _, err = socket.ReadFromUDP(answerBytes[:])
-	if err != nil {
-		fmt.Println("Could not find your Roku!")
-		os.Exit(1)
-	}
-
-	ret := strings.Split(string(answerBytes), "\r\n")
-	location := strings.TrimPrefix(ret[len(ret)-3], "LOCATION: ")
-
-	var name string
-	name = queryInfoForAddress(location).DeviceName
-
-	return location, name
+	return rokus
 }
 
 func getRokuAddress() string {
-	return getRokuConfig().Address
+	return getRokuConfig().Current.Address
 }
 
 func getRokuName() string {
-	return getRokuConfig().Name
+	return getRokuConfig().Current.Name
 }
 
 func getRokuConfig() grokuConfig {
@@ -259,20 +276,21 @@ func getRokuConfig() grokuConfig {
 
 	// the config file doesn't exist, but that's okay
 	if err != nil {
-		config.Address, config.Name = findRoku()
+		config.Rokus = findRokus()
 		config.Timestamp = time.Now().Unix()
 	} else {
 		// the config file exists
 		if err := json.NewDecoder(configFile).Decode(&config); err != nil {
-			config.Address, config.Name = findRoku()
+			config.Rokus = findRokus()
 		}
 
 		//if the config file is over 60 seconds old, then replace it
 		if config.Timestamp == 0 || time.Now().Unix()-config.Timestamp > 60 {
-			config.Address, config.Name = findRoku()
+			config.Rokus = findRokus()
 			config.Timestamp = time.Now().Unix()
 		}
 	}
+	config.Current = config.Rokus[0]
 
 	if b, err := json.Marshal(config); err == nil {
 		ioutil.WriteFile(CONFIG, b, os.ModePerm)
