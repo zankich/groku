@@ -41,7 +41,8 @@ Commands:
 	replay          Replay
 	play            Play
 	pause           Pause
-	discover        Discover a roku on your local network
+	discover        Discover Roku devices on your local network
+	list            List known Roku devices
 	use             Set Roku name to use
 	device-info     Display device info
 	text            Send text to the Roku
@@ -125,6 +126,14 @@ func main() {
 			}
 		}
 		os.Exit(0)
+	case "list":
+		config := getRokuConfig()
+		for _, r := range config.Rokus {
+			if r.Name != "" {
+				fmt.Print(r.Name, ": ")
+			}
+			fmt.Println(r.Address)
+		}
 	case "use":
 		config := getRokuConfig()
 		for _, r := range config.Rokus {
