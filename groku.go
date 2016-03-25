@@ -39,6 +39,7 @@ Commands:
   play            Play
   pause           Pause
   discover        Discover a roku on your local network
+  device-info     Display device info
   text            Send text to the Roku
   apps            List installed apps on your Roku
   app             Launch specified app
@@ -104,6 +105,13 @@ func main() {
 		}
 		fmt.Println()
 		os.Exit(0)
+	case "device-info":
+		var info = queryInfo()
+		if getRokuName() != "" {
+			fmt.Printf("Name:\t\t%v\n", info.DeviceName)
+		}
+		fmt.Printf("Model:\t\t%v %v\n", info.ModelName, info.ModelNum)
+		fmt.Printf("Serial:\t\t%v\n", info.Serial)
 	case "text":
 		if len(os.Args) < 3 {
 			fmt.Println(USAGE)
