@@ -39,15 +39,26 @@ Commands:
   play            Play
   pause           Pause
   discover        Discover a roku on your local network
+  device-info     Display device info
   text            Send text to the Roku
   apps            List installed apps on your Roku
   app             Launch specified app
 `
 )
 
-type dictonary struct {
+type dictionary struct {
 	XMLName xml.Name `xml:"apps"`
 	Apps    []app    `xml:"app"`
+}
+
+type deviceinfo struct {
+	XMLName    xml.Name `xml:"device-info"`
+	UDN        string   `xml:"udn"`
+	Serial     string   `xml:"serial-number"`
+	DeviceID   string   `xml:"device-id"`
+	ModelNum   string   `xml:"model-number"`
+	ModelName  string   `xml:"model-name"`
+	DeviceName string   `xml:"user-device-name"`
 }
 
 type app struct {
@@ -57,6 +68,7 @@ type app struct {
 
 type grokuConfig struct {
 	Address   string `json:"address"`
+	Name      string `json:"name"`
 	Timestamp int64  `json:"timestamp"`
 }
 
@@ -87,8 +99,19 @@ func main() {
 		http.PostForm(fmt.Sprintf("%vkeypress/%v", getRokuAddress(), "Play"), nil)
 		os.Exit(0)
 	case "discover":
-		fmt.Println("Found roku at", getRokuAddress())
+		fmt.Print("Found roku at ", getRokuAddress())
+		if getRokuName() != "" {
+			fmt.Print(" named ", getRokuName())
+		}
+		fmt.Println()
 		os.Exit(0)
+	case "device-info":
+		var info = queryInfo()
+		if getRokuName() != "" {
+			fmt.Printf("Name:\t\t%v\n", info.DeviceName)
+		}
+		fmt.Printf("Model:\t\t%v %v\n", info.ModelName, info.ModelNum)
+		fmt.Printf("Serial:\t\t%v\n", info.Serial)
 	case "text":
 		if len(os.Args) < 3 {
 			fmt.Println(USAGE)
@@ -128,7 +151,7 @@ func main() {
 	}
 }
 
-func queryApps() dictonary {
+func queryApps() dictionary {
 	resp, err := http.Get(fmt.Sprintf("%squery/apps", getRokuAddress()))
 	if err != nil {
 		fmt.Println(err)
@@ -137,7 +160,7 @@ func queryApps() dictonary {
 
 	defer resp.Body.Close()
 
-	var dict dictonary
+	var dict dictionary
 	if err := xml.NewDecoder(resp.Body).Decode(&dict); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -146,7 +169,29 @@ func queryApps() dictonary {
 	return dict
 }
 
-func findRoku() string {
+func queryInfoForAddress(address string) deviceinfo {
+	resp, err := http.Get(fmt.Sprintf("%squery/device-info", address))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	defer resp.Body.Close()
+
+	var info deviceinfo
+	if err := xml.NewDecoder(resp.Body).Decode(&info); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	return info
+}
+
+func queryInfo() deviceinfo {
+	return queryInfoForAddress(getRokuAddress())
+}
+
+func findRoku() (string, string) {
 	ssdp, err := net.ResolveUDPAddr("udp", "239.255.255.250:1900")
 	if err != nil {
 		fmt.Println(err)
@@ -192,10 +237,21 @@ func findRoku() string {
 	ret := strings.Split(string(answerBytes), "\r\n")
 	location := strings.TrimPrefix(ret[len(ret)-3], "LOCATION: ")
 
-	return location
+	var name string
+	name = queryInfoForAddress(location).DeviceName
+
+	return location, name
 }
 
 func getRokuAddress() string {
+	return getRokuConfig().Address
+}
+
+func getRokuName() string {
+	return getRokuConfig().Name
+}
+
+func getRokuConfig() grokuConfig {
 	var configFile *os.File
 	var config grokuConfig
 
@@ -203,17 +259,17 @@ func getRokuAddress() string {
 
 	// the config file doesn't exist, but that's okay
 	if err != nil {
-		config.Address = findRoku()
+		config.Address, config.Name = findRoku()
 		config.Timestamp = time.Now().Unix()
 	} else {
 		// the config file exists
 		if err := json.NewDecoder(configFile).Decode(&config); err != nil {
-			config.Address = findRoku()
+			config.Address, config.Name = findRoku()
 		}
 
 		//if the config file is over 60 seconds old, then replace it
 		if config.Timestamp == 0 || time.Now().Unix()-config.Timestamp > 60 {
-			config.Address = findRoku()
+			config.Address, config.Name = findRoku()
 			config.Timestamp = time.Now().Unix()
 		}
 	}
@@ -222,5 +278,5 @@ func getRokuAddress() string {
 		ioutil.WriteFile(CONFIG, b, os.ModePerm)
 	}
 
-	return config.Address
+	return config
 }
