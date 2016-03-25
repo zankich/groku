@@ -42,7 +42,7 @@ Commands:
 	play            Play
 	pause           Pause
 	discover        Discover a roku on your local network
-  use             Set Roku name to use
+	use             Set Roku name to use
 	device-info     Display device info
 	text            Send text to the Roku
 	apps            List installed apps on your Roku
