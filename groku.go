@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -11,6 +12,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/mitchellh/go-homedir"
 )
 
 var CONFIG string
@@ -39,6 +42,7 @@ Commands:
 	play            Play
 	pause           Pause
 	discover        Discover a roku on your local network
+  use             Set Roku name to use
 	device-info     Display device info
 	text            Send text to the Roku
 	apps            List installed apps on your Roku
@@ -72,14 +76,19 @@ type roku struct {
 }
 
 type grokuConfig struct {
+	LastName  string `json:"lastname"`
 	Current   roku   `json:"current"`
 	Rokus     []roku `json:"rokus"`
 	Timestamp int64  `json:"timestamp"`
 }
 
 func main() {
-	CONFIG = fmt.Sprintf("%s/groku.json", os.TempDir())
-	fmt.Println("CONFIG: ", CONFIG)
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println("Cannot find home directory")
+		os.Exit(1)
+	}
+	CONFIG = fmt.Sprintf("%s/groku.json", home)
 
 	if len(os.Args) == 1 || os.Args[1] == "--help" || os.Args[1] == "-help" ||
 		os.Args[1] == "--h" || os.Args[1] == "-h" || os.Args[1] == "help" {
@@ -96,24 +105,41 @@ func main() {
 	switch os.Args[1] {
 	case "home", "rev", "fwd", "select", "left", "right", "down", "up",
 		"back", "info", "backspace", "enter", "search":
-		http.PostForm(fmt.Sprintf("%vkeypress/%v", getRokuAddress(), os.Args[1]), nil)
+		http.PostForm(fmt.Sprintf("%vkeypress/%v", getCurrentRokuAddress(), os.Args[1]), nil)
 		os.Exit(0)
 	case "replay":
-		http.PostForm(fmt.Sprintf("%vkeypress/%v", getRokuAddress(), "InstantReplay"), nil)
+		http.PostForm(fmt.Sprintf("%vkeypress/%v", getCurrentRokuAddress(), "InstantReplay"), nil)
 		os.Exit(0)
 	case "play", "pause":
-		http.PostForm(fmt.Sprintf("%vkeypress/%v", getRokuAddress(), "Play"), nil)
+		http.PostForm(fmt.Sprintf("%vkeypress/%v", getCurrentRokuAddress(), "Play"), nil)
 		os.Exit(0)
 	case "discover":
-		fmt.Print("Found roku at ", getRokuAddress())
-		if getRokuName() != "" {
-			fmt.Print(" named ", getRokuName())
+		config := getRokuConfig()
+		if len(config.Rokus) > 0 {
+			for _, r := range config.Rokus {
+				fmt.Print("Found roku at ", r.Address)
+				if r.Name != "" {
+					fmt.Print(" named ", r.Name)
+				}
+				fmt.Println()
+			}
 		}
-		fmt.Println()
 		os.Exit(0)
+	case "use":
+		config := getRokuConfig()
+		for _, r := range config.Rokus {
+			if strings.ToUpper(os.Args[2]) == strings.ToUpper(r.Name) {
+				config.Current = r
+				config.LastName = os.Args[2]
+				writeConfig(config)
+				fmt.Printf("Using Roku named %v at %v", r.Name, r.Address)
+				os.Exit(0)
+			}
+		}
+		fmt.Printf("Cannot find Roku named %v\n", os.Args[2])
 	case "device-info":
 		var info = queryInfo()
-		if getRokuName() != "" {
+		if getCurrentRokuName() != "" {
 			fmt.Printf("Name:\t\t%v\n", info.DeviceName)
 		}
 		fmt.Printf("Model:\t\t%v %v\n", info.ModelName, info.ModelNum)
@@ -124,7 +150,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		roku := getRokuAddress()
+		roku := getCurrentRokuAddress()
 		for _, c := range os.Args[2] {
 			http.PostForm(fmt.Sprintf("%skeypress/Lit_%s", roku, url.QueryEscape(string(c))), nil)
 		}
@@ -145,7 +171,7 @@ func main() {
 
 		for _, a := range dict.Apps {
 			if a.Name == os.Args[2] {
-				http.PostForm(fmt.Sprintf("%vlaunch/%v", getRokuAddress(), a.ID), nil)
+				http.PostForm(fmt.Sprintf("%vlaunch/%v", getCurrentRokuAddress(), a.ID), nil)
 				os.Exit(0)
 			}
 		}
@@ -158,7 +184,7 @@ func main() {
 }
 
 func queryApps() dictionary {
-	resp, err := http.Get(fmt.Sprintf("%squery/apps", getRokuAddress()))
+	resp, err := http.Get(fmt.Sprintf("%squery/apps", getCurrentRokuAddress()))
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -194,7 +220,7 @@ func queryInfoForAddress(address string) deviceinfo {
 }
 
 func queryInfo() deviceinfo {
-	return queryInfoForAddress(getRokuAddress())
+	return queryInfoForAddress(getCurrentRokuAddress())
 }
 
 func findRokus() []roku {
@@ -242,30 +268,32 @@ func findRokus() []roku {
 		if err == nil {
 			ret := strings.Split(string(answerBytes), "\r\n")
 			location := strings.TrimPrefix(ret[len(ret)-3], "LOCATION: ")
-
-			for _, s := range ret {
-				fmt.Println(s)
-			}
-
 			name := queryInfoForAddress(location).DeviceName
 
 			r := roku{Name: name, Address: location}
-			fmt.Println(r)
-
 			rokus = append(rokus, r)
 		}
 	}
-	fmt.Println("Rokus: ", rokus)
 
 	return rokus
 }
 
-func getRokuAddress() string {
+func getCurrentRokuAddress() string {
 	return getRokuConfig().Current.Address
 }
 
-func getRokuName() string {
+func getCurrentRokuName() string {
 	return getRokuConfig().Current.Name
+}
+
+func getRokuConfigFor(name string) (*roku, error) {
+	config := getRokuConfig()
+	for _, e := range config.Rokus {
+		if strings.ToUpper(e.Name) == strings.ToUpper(name) {
+			return &e, nil
+		}
+	}
+	return nil, errors.New(fmt.Sprintf("%v not found", name))
 }
 
 func getRokuConfig() grokuConfig {
@@ -290,11 +318,30 @@ func getRokuConfig() grokuConfig {
 			config.Timestamp = time.Now().Unix()
 		}
 	}
-	config.Current = config.Rokus[0]
 
+	if config.LastName != "" {
+		found := false
+		for _, e := range config.Rokus {
+			if strings.ToUpper(e.Name) == strings.ToUpper(config.LastName) {
+				config.Current = e
+				found = true
+			}
+		}
+		if !found {
+			config.Current = config.Rokus[0]
+			fmt.Printf("Previously used Roku %v not found anymore, using %v as new default", config.LastName, config.Current.Name)
+		}
+	} else {
+		config.Current = config.Rokus[0]
+	}
+	writeConfig(config)
+	return config
+}
+
+func writeConfig(config grokuConfig) error {
 	if b, err := json.Marshal(config); err == nil {
 		ioutil.WriteFile(CONFIG, b, os.ModePerm)
 	}
 
-	return config
+	return nil
 }
