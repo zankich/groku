@@ -4,20 +4,7 @@ groku
 CLI remote for controlling your [Roku](https://www.roku.com/)
 
 ### Installation
-You may download a precompiled binary
-
-##### Windows
-- [32bit](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_windows_386.zip)
-- [64bit](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_windows_amd64.zip)
-
-##### Linux
-- [32bit](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_linux_386.tar.gz)
-- [64bit](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_linux_amd64.tar.gz)
-- [armhf](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_linux_arm.tar.gz)
-
-##### OSX
-- [32bit](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_darwin_386.zip)
-- [64bit](https://github.com/zankich/groku/releases/download/0.4/groku_0.4_darwin_amd64.zip)
+You may download a precompiled binary from the latest [release](https://github.com/zankich/groku/releases)
 
 Or install from source  
 `go get github.com/zankich/groku`
