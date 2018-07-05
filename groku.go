@@ -16,7 +16,7 @@ import (
 var CONFIG string
 
 const (
-	VERSION = "0.4"
+	VERSION = "0.4.1"
 	USAGE   = `usage: groku [--version] [--help] <command> [<args>]
 
 CLI remote for your Roku
@@ -190,7 +190,7 @@ func findRoku() string {
 	}
 
 	ret := strings.Split(string(answerBytes), "\r\n")
-	location := strings.TrimPrefix(ret[len(ret)-3], "LOCATION: ")
+	location := strings.TrimPrefix(ret[6], "LOCATION: ")
 
 	return location
 }
